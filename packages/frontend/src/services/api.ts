@@ -26,9 +26,9 @@ const makeRequest = async <T>(
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> => {
   const token = getAuthToken();
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
@@ -56,6 +56,39 @@ const makeRequest = async <T>(
   }
 };
 
+const makeFormDataRequest = async <T>(
+  endpoint: string,
+  formData: FormData,
+): Promise<ApiResponse<T>> => {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new ApiError(response.status, data.message || data.error || 'Request failed');
+    }
+
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, 'Network error');
+  }
+};
+
 export const api = {
   get: <T>(endpoint: string) => makeRequest<T>(endpoint, { method: 'GET' }),
 
@@ -72,4 +105,7 @@ export const api = {
     }),
 
   delete: <T>(endpoint: string) => makeRequest<T>(endpoint, { method: 'DELETE' }),
+
+  postFormData: <T>(endpoint: string, formData: FormData) =>
+    makeFormDataRequest<T>(endpoint, formData),
 };
