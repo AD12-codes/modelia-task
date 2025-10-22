@@ -8,5 +8,5 @@ build
 *.log
 coverage
 .turbo
-drizzle
 docs
+uploads
